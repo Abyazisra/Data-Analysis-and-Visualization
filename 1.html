@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scatter Plot with D3.js v7</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    svg {
+      background-color: #f9f9f9;
+      margin: 20px;
+    }
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 12px;
+      pointer-events: none;
+      display: none;
+    }
+    button {
+      margin: 10px;
+      padding: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h2>Interactive Scatter Plot using D3.js v7</h2>
+  
+  <div>
+    <button id="colorScaleBtn">Change Color Scale</button>
+    <button id="sizeBtn">Toggle Point Size</button>
+  </div>
+
+  <div id="chart"></div>
+  <div class="tooltip"></div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="app.js"></script> <!-- Link to your D3 script -->
+</body>
+</html>

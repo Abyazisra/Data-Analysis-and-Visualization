@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interactive Dashboard</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .bar { fill: steelblue; cursor: pointer; }
+    .line { fill: none; stroke: steelblue; stroke-width: 2px; }
+  </style>
+</head>
+<body>
+  <div id="dashboard"></div>
+  <script>
+    const data = [
+      { month: "January", value: 100 },
+      { month: "February", value: 120 },
+      { month: "March", value: 90 },
+      { month: "April", value: 150 },
+      { month: "May", value: 80 },
+      { month: "June", value: 200 },
+      { month: "July", value: 170 },
+      { month: "August", value: 140 },
+      { month: "September", value: 130 },
+      { month: "October", value: 180 },
+      { month: "November", value: 110 },
+      { month: "December", value: 160 }
+    ];
+
+    // Bar Chart
+    const width = 400, height = 200, margin = { top: 20, right: 20, bottom: 30, left: 40 };
+    const svgBar = d3.select("#dashboard").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    const x = d3.scaleBand()
+      .domain(data.map(d => d.month))
+      .range([0, width])
+      .padding(0.1);
+
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(data, d => d.value)])
+      .range([height, 0]);
+
+    svgBar.append("g")
+      .attr("transform", `translate(0, ${height})`)
+      .call(d3.axisBottom(x));
+
+    svgBar.append("g")
+      .call(d3.axisLeft(y));
+
+    const bars = svgBar.selectAll(".bar")
+      .data(data)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", d => x(d.month))
+      .attr("y", d => y(d.value))
+      .attr("width", x.bandwidth())
+      .attr("height", d => height - y(d.value))
+      .on("click", (event, d) => updateLineChart(d.month)); // Add interactivity
+
+    // Line Chart
+    const dailySalesData = {
+      "January": [10, 20, 30, 40],
+      "February": [15, 25, 35, 45],
+      // ... Add data for other months
+    };
+
+    const svgLine = d3.select("#dashboard").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    const xLine = d3.scaleLinear().range([0, width]);
+    const yLine = d3.scaleLinear().range([height, 0]);
+
+    svgLine.append("g")
+      .attr("transform", `translate(0, ${height})`)
+      .call(d3.axisBottom(xLine));
+
+    svgLine.append("g")
+      .call(d3.axisLeft(yLine));
+
+    function updateLineChart(month) {
+      const dailyData = dailySalesData[month];
+      xLine.domain([0, dailyData.length - 1]);
+      yLine.domain([0, d3.max(dailyData)]);
+
+      const line = d3.line()
+        .x((d, i) => xLine(i))
+        .y(d => yLine(d));
+
+      svgLine.selectAll(".line").remove();
+
+      svgLine.append("path")
+        .datum(dailyData)
+        .attr("class", "line")
+        .attr("d", line);
+    }
+  </script>
+</body>
+</html>

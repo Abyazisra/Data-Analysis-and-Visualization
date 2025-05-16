@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hierarchical Drill-Down Visualization</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    .tooltip {
+      position: absolute;
+      visibility: hidden;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+    svg {
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hierarchical Drill-Down Visualization</h1>
+  <div>
+    <h2>Tree Diagram: Company Organization Chart</h2>
+    <svg id="treeDiagram" width="600" height="400"></svg>
+  </div>
+  <div>
+    <h2>Sunburst Chart: Sales Breakdown</h2>
+    <svg id="sunburstChart" width="400" height="400"></svg>
+  </div>
+
+  <script>
+    // Data for Tree Diagram
+    const orgData = {
+      name: "Company",
+      children: [
+        {
+          name: "Marketing",
+          children: [
+            { name: "Alice" },
+            { name: "Bob" },
+          ],
+        },
+        {
+          name: "Sales",
+          children: [
+            { name: "Charlie" },
+            { name: "Diana" },
+          ],
+        },
+        {
+          name: "HR",
+          children: [
+            { name: "Eve" },
+            { name: "Frank" },
+          ],
+        },
+      ],
+    };
+
+    // Data for Sunburst Chart
+    const salesData = {
+      name: "Total Sales",
+      children: [
+        {
+          name: "North",
+          children: [
+            { name: "Electronics", value: 120 },
+            { name: "Clothing", value: 80 },
+          ],
+        },
+        {
+          name: "South",
+          children: [
+            { name: "Electronics", value: 90 },
+            { name: "Furniture", value: 60 },
+          ],
+        },
+      ],
+    };
+
+    // 1. Tree Diagram
+    const treeWidth = 600;
+    const treeHeight = 400;
+    const treeSvg = d3.select("#treeDiagram");
+    const treeGroup = treeSvg.append("g").attr("transform", "translate(50,50)");
+
+    const treeLayout = d3.tree().size([treeWidth - 100, treeHeight - 100]);
+    const root = d3.hierarchy(orgData);
+
+    treeLayout(root);
+
+    const treeLinks = treeGroup.selectAll(".link")
+      .data(root.links())
+      .enter()
+      .append("line")
+      .attr("class", "link")
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y)
+      .attr("stroke", "black");
+
+    const treeNodes = treeGroup.selectAll(".node")
+      .data(root.descendants())
+      .enter()
+      .append("g")
+      .attr("class", "node")
+      .attr("transform", d => `translate(${d.x},${d.y})`);
+
+    treeNodes.append("circle")
+      .attr("r", 10)
+      .attr("fill", "steelblue")
+      .on("click", (event, d) => updateSunburst(d.data.name));
+
+    treeNodes.append("text")
+      .attr("dy", 4)
+      .attr("x", 15)
+      .text(d => d.data.name);
+
+    // 2. Sunburst Chart
+    const sunburstRadius = 200;
+    const sunburstSvg = d3.select("#sunburstChart")
+      .attr("width", sunburstRadius * 2)
+      .attr("height", sunburstRadius * 2)
+      .append("g")
+      .attr("transform", `translate(${sunburstRadius},${sunburstRadius})`);
+
+    const partition = d3.partition().size([2 * Math.PI, sunburstRadius]);
+
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    function updateSunburst(regionFilter = null) {
+      const filteredData = regionFilter && regionFilter !== "Company" 
+        ? {
+          name: "Total Sales",
+          children: salesData.children.filter(d => d.name === regionFilter),
+        }
+        : salesData;
+
+      const root = d3.hierarchy(filteredData).sum(d => d.value || 0);
+
+      partition(root);
+
+      const arc = d3.arc()
+        .startAngle(d => d.x0)
+        .endAngle(d => d.x1)
+        .innerRadius(d => d.y0)
+        .outerRadius(d => d.y1);
+
+      const paths = sunburstSvg.selectAll("path")
+        .data(root.descendants());
+
+      paths.exit().remove();
+
+      paths.enter().append("path")
+        .merge(paths)
+        .attr("d", arc)
+        .attr("fill", d => color(d.data.name))
+        .attr("stroke", "#fff")
+        .on("click", (event, d) => updateSunburst(d.data.name));
+    }
+
+    updateSunburst();
+  </script>
+</body>
+</html>

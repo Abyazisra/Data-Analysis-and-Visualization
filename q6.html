@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Dashboard</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .chart {
+      display: inline-block;
+      margin: 20px;
+    }
+    .tooltip {
+      position: absolute;
+      visibility: hidden;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+      pointer-events: none;
+    }
+    svg {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>Interactive Dashboard</h1>
+
+  <div class="chart">
+    <h2>Bar Chart: Monthly Sales</h2>
+    <svg id="barChart" width="500" height="300"></svg>
+  </div>
+
+  <div class="chart">
+    <h2>Stacked Bar Chart: Product Category Breakdown</h2>
+    <svg id="stackedBarChart" width="500" height="300"></svg>
+  </div>
+
+  <div class="chart">
+    <h2>Sunburst Chart: Regional Breakdown</h2>
+    <svg id="sunburstChart" width="400" height="400"></svg>
+  </div>
+
+  <div class="chart">
+    <h2>Scatter Plot: Customer Demographics</h2>
+    <svg id="scatterPlot" width="500" height="300"></svg>
+  </div>
+
+  <script>
+    // Sample Data
+    const monthlySales = [
+      { month: "Jan", sales: 300 },
+      { month: "Feb", sales: 200 },
+      { month: "Mar", sales: 400 },
+      { month: "Apr", sales: 250 },
+      { month: "May", sales: 350 },
+      { month: "Jun", sales: 500 },
+      { month: "Jul", sales: 300 },
+      { month: "Aug", sales: 400 },
+      { month: "Sep", sales: 450 },
+      { month: "Oct", sales: 350 },
+      { month: "Nov", sales: 300 },
+      { month: "Dec", sales: 600 },
+    ];
+
+    const categoryBreakdown = {
+      Jan: { Electronics: 120, Clothing: 80, Furniture: 100 },
+      Feb: { Electronics: 90, Clothing: 50, Furniture: 60 },
+      Mar: { Electronics: 150, Clothing: 120, Furniture: 130 },
+      Apr: { Electronics: 100, Clothing: 90, Furniture: 60 },
+      May: { Electronics: 140, Clothing: 110, Furniture: 100 },
+      Jun: { Electronics: 200, Clothing: 150, Furniture: 150 },
+    };
+
+    const regionalData = {
+      name: "Total Sales",
+      children: [
+        {
+          name: "North",
+          children: [
+            { name: "Electronics", value: 120 },
+            { name: "Clothing", value: 80 },
+          ],
+        },
+        {
+          name: "South",
+          children: [
+            { name: "Electronics", value: 150 },
+            { name: "Clothing", value: 100 },
+          ],
+        },
+      ],
+    };
+
+    const customerDemographics = [
+      { age: 25, spend: 300, name: "Alice" },
+      { age: 35, spend: 400, name: "Bob" },
+      { age: 45, spend: 250, name: "Charlie" },
+      { age: 30, spend: 350, name: "David" },
+      { age: 40, spend: 300, name: "Eve" },
+    ];
+
+    // Tooltip for Interactivity
+    const tooltip = d3.select("body").append("div").attr("class", "tooltip");
+
+    // Bar Chart
+    const barChart = d3.select("#barChart");
+    const barWidth = 40;
+    const barChartHeight = 300;
+
+    barChart
+      .selectAll("rect")
+      .data(monthlySales)
+      .enter()
+      .append("rect")
+      .attr("x", (d, i) => i * (barWidth + 10))
+      .attr("y", d => barChartHeight - d.sales)
+      .attr("width", barWidth)
+      .attr("height", d => d.sales)
+      .attr("fill", "steelblue")
+      .on("click", (event, d) => updateStackedBarChart(d.month));
+
+    barChart
+      .selectAll("text")
+      .data(monthlySales)
+      .enter()
+      .append("text")
+      .attr("x", (d, i) => i * (barWidth + 10) + barWidth / 2)
+      .attr("y", barChartHeight - 10)
+      .attr("text-anchor", "middle")
+      .text(d => d.month);
+
+    // Stacked Bar Chart
+    const stackedBarChart = d3.select("#stackedBarChart");
+    const colors = d3.scaleOrdinal(d3.schemeCategory10);
+
+    function updateStackedBarChart(month) {
+      const data = categoryBreakdown[month];
+      const categories = Object.keys(data);
+      const values = Object.values(data);
+      const total = values.reduce((a, b) => a + b, 0);
+
+      const stack = d3.stack().keys(categories);
+      const series = stack([data]);
+
+      stackedBarChart.selectAll("*").remove();
+
+      stackedBarChart
+        .selectAll("rect")
+        .data(series)
+        .enter()
+        .append("rect")
+        .attr("x", 50)
+        .attr("y", d => barChartHeight - (d[1] / total) * barChartHeight)
+        .attr("width", 40)
+        .attr("height", d => (d[1] / total) * barChartHeight)
+        .attr("fill", (d, i) => colors(i));
+    }
+
+    // Initialize Stacked Bar Chart
+    updateStackedBarChart("Jan");
+
+    // Sunburst Chart
+    // Placeholder for Sunburst Chart implementation
+
+    // Scatter Plot
+    // Placeholder for Scatter Plot implementation
+
+    // Zoom & Pan
+    // Placeholder for Zoom & Pan functionality
+  </script>
+</body>
+</html>

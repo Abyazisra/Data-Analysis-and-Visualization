@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <title>Stacked Bar Chart with Hover Interaction</title>
+  <style>
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      pointer-events: none;
+      visibility: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    // Data for the chart
+    const stackData = [
+      { month: 'January', productA: 500, productB: 1000, productC: 200 },
+      { month: 'February', productA: 700, productB: 1300, productC: 250 },
+      { month: 'March', productA: 800, productB: 1500, productC: 400 },
+      { month: 'April', productA: 900, productB: 1800, productC: 500 },
+      { month: 'May', productA: 1000, productB: 2000, productC: 600 }
+    ];
+
+    // Dimensions and margins
+    const width = 500, height = 300;
+    const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+
+    // Create an SVG container
+    const svg = d3.select('body').append('svg')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Prepare the data for stacking
+    const products = ['productA', 'productB', 'productC'];
+    const stack = d3.stack().keys(products);
+    const stackedData = stack(stackData);
+
+    // X scale for months
+    const x = d3.scaleBand()
+      .domain(stackData.map(d => d.month))
+      .range([0, width])
+      .padding(0.1);
+
+    // Y scale for total sales
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(stackData, d => d.productA + d.productB + d.productC)])
+      .nice()
+      .range([height, 0]);
+
+    // Color scale for products
+    const color = d3.scaleOrdinal()
+      .domain(products)
+      .range(['#4CAF50', '#2196F3', '#FFC107']); // Green, Blue, Yellow
+
+    // Create a tooltip
+    const tooltip = d3.select('#tooltip');
+
+    // Draw the stacked bars
+    svg.selectAll('.layer')
+      .data(stackedData)
+      .enter().append('g')
+      .attr('class', 'layer')
+      .attr('fill', d => color(d.key))
+      .selectAll('rect')
+      .data(d => d)
+      .enter().append('rect')
+      .attr('x', d => x(d.data.month))
+      .attr('y', d => y(d[1]))
+      .attr('height', d => y(d[0]) - y(d[1]))
+      .attr('width', x.bandwidth())
+      .on('mouseover', function(event, d) {
+        const product = d3.select(this.parentNode).datum().key;
+        const totalSales = d.data.productA + d.data.productB + d.data.productC;
+        const productSales = d.data[product];
+        const percentage = ((productSales / totalSales) * 100).toFixed(2);
+
+        tooltip.style('visibility', 'visible')
+          .html(`<strong>${product}</strong><br>Percentage: ${percentage}%`);
+      })
+      .on('mousemove', function(event) {
+        tooltip.style('top', (event.pageY - 10) + 'px')
+          .style('left', (event.pageX + 10) + 'px');
+      })
+      .on('mouseout', function() {
+        tooltip.style('visibility', 'hidden');
+      });
+
+    // Add the x-axis
+    svg.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(x));
+
+    // Add the y-axis
+    svg.append('g')
+      .call(d3.axisLeft(y));
+
+    // Add x-axis label
+    svg.append('text')
+      .attr('x', width / 2)
+      .attr('y', height + margin.bottom - 5)
+      .attr('text-anchor', 'middle')
+      .style('font-size', '14px')
+      .text('Months');
+
+    // Add y-axis label
+    svg.append('text')
+      .attr('x', -(height / 2))
+      .attr('y', -margin.left + 15)
+      .attr('text-anchor', 'middle')
+      .attr('transform', 'rotate(-90)')
+      .style('font-size', '14px')
+      .text('Total Sales');
+
+    // Add a legend
+    const legend = svg.append('g')
+      .attr('transform', `translate(${width - 100}, 0)`);
+
+    products.forEach((product, i) => {
+      const legendRow = legend.append('g')
+        .attr('transform', `translate(0, ${i * 20})`);
+
+      legendRow.append('rect')
+        .attr('width', 10)
+        .attr('height', 10)
+        .attr('fill', color(product));
+
+      legendRow.append('text')
+        .attr('x', 15)
+        .attr('y', 10)
+        .attr('text-anchor', 'start')
+        .style('font-size', '12px')
+        .text(product);
+    });
+  </script>
+</body>
+</html>

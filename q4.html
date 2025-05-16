@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Dashboard</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    .tooltip {
+      position: absolute;
+      visibility: hidden;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+    svg {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Interactive Dashboard</h1>
+
+  <!-- Dropdown for Scatter Plot Filtering -->
+  <label for="ageFilter">Filter by Age Group:</label>
+  <select id="ageFilter">
+    <option value="all">All</option>
+    <option value="18-25">18-25</option>
+    <option value="26-35">26-35</option>
+    <option value="36-45">36-45</option>
+  </select>
+
+  <!-- D3 Visualizations -->
+  <script>
+    const scatterWidth = 400, scatterHeight = 300, margin = 50;
+    const barWidth = 400, barHeight = 300, sunburstRadius = 150;
+
+    // Sample Data
+    const scatterData = [
+      { name: "Alice", age: 22, income: 30000 },
+      { name: "Bob", age: 28, income: 45000 },
+      { name: "Charlie", age: 35, income: 70000 },
+      { name: "Diana", age: 40, income: 50000 },
+      { name: "Eve", age: 19, income: 25000 },
+    ];
+
+    const regionData = [
+      { region: "North", Electronics: 120, Clothing: 80, Furniture: 50 },
+      { region: "South", Electronics: 90, Clothing: 70, Furniture: 40 },
+      { region: "East", Electronics: 100, Clothing: 60, Furniture: 30 },
+      { region: "West", Electronics: 110, Clothing: 50, Furniture: 20 },
+    ];
+
+    // Scatter Plot
+    const scatterSvg = d3.select("body").append("svg")
+      .attr("width", scatterWidth)
+      .attr("height", scatterHeight);
+
+    const xScatter = d3.scaleLinear()
+      .domain([18, 45])
+      .range([margin, scatterWidth - margin]);
+
+    const yScatter = d3.scaleLinear()
+      .domain([0, d3.max(scatterData, d => d.income)])
+      .range([scatterHeight - margin, margin]);
+
+    scatterSvg.append("g")
+      .attr("transform", `translate(0,${scatterHeight - margin})`)
+      .call(d3.axisBottom(xScatter));
+
+    scatterSvg.append("g")
+      .attr("transform", `translate(${margin},0)`)
+      .call(d3.axisLeft(yScatter));
+
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip");
+
+    function updateScatter(filteredData) {
+      const dots = scatterSvg.selectAll(".dot")
+        .data(filteredData, d => d.name);
+
+      dots.exit().remove();
+
+      dots.enter().append("circle")
+        .attr("class", "dot")
+        .merge(dots)
+        .attr("cx", d => xScatter(d.age))
+        .attr("cy", d => yScatter(d.income))
+        .attr("r", 5)
+        .attr("fill", "steelblue")
+        .on("mouseover", (event, d) => {
+          tooltip.style("visibility", "visible")
+            .text(`Name: ${d.name}, Age: ${d.age}, Income: $${d.income}`);
+        })
+        .on("mousemove", event => {
+          tooltip.style("top", (event.pageY + 5) + "px")
+            .style("left", (event.pageX + 5) + "px");
+        })
+        .on("mouseout", () => tooltip.style("visibility", "hidden"));
+    }
+
+    updateScatter(scatterData);
+
+    d3.select("#ageFilter").on("change", () => {
+      const selectedGroup = d3.select("#ageFilter").property("value");
+      const filteredData = scatterData.filter(d => {
+        if (selectedGroup === "all") return true;
+        if (selectedGroup === "18-25") return d.age >= 18 && d.age <= 25;
+        if (selectedGroup === "26-35") return d.age >= 26 && d.age <= 35;
+        if (selectedGroup === "36-45") return d.age >= 36 && d.age <= 45;
+      });
+      updateScatter(filteredData);
+    });
+
+    // Stacked Bar Chart
+    const barSvg = d3.select("body").append("svg")
+      .attr("width", barWidth)
+      .attr("height", barHeight);
+
+    const xBar = d3.scaleBand()
+      .domain(regionData.map(d => d.region))
+      .range([margin, barWidth - margin])
+      .padding(0.2);
+
+    const yBar = d3.scaleLinear()
+      .domain([0, d3.max(regionData, d => d.Electronics + d.Clothing + d.Furniture)])
+      .range([barHeight - margin, margin]);
+
+    barSvg.append("g")
+      .attr("transform", `translate(0,${barHeight - margin})`)
+      .call(d3.axisBottom(xBar));
+
+    barSvg.append("g")
+      .attr("transform", `translate(${margin},0)`)
+      .call(d3.axisLeft(yBar));
+
+    const stack = d3.stack()
+      .keys(["Electronics", "Clothing", "Furniture"]);
+
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    const stackedData = stack(regionData);
+
+    const bars = barSvg.selectAll("g.bar-group")
+      .data(stackedData)
+      .enter().append("g")
+      .attr("class", "bar-group")
+      .attr("fill", d => color(d.key));
+
+    bars.selectAll("rect")
+      .data(d => d)
+      .enter().append("rect")
+      .attr("x", d => xBar(d.data.region))
+      .attr("y", d => yBar(d[1]))
+      .attr("height", d => yBar(d[0]) - yBar(d[1]))
+      .attr("width", xBar.bandwidth())
+      .on("click", (event, d) => updateSunburst(d.data));
+
+    // Sunburst Chart
+    const sunburstSvg = d3.select("body").append("svg")
+      .attr("width", sunburstRadius * 2)
+      .attr("height", sunburstRadius * 2)
+      .append("g")
+      .attr("transform", `translate(${sunburstRadius},${sunburstRadius})`);
+
+    function updateSunburst(regionData) {
+      const root = d3.hierarchy({ children: Object.entries(regionData).map(([k, v]) => ({ name: k, value: v })) })
+        .sum(d => d.value);
+
+      const partition = d3.partition().size([2 * Math.PI, sunburstRadius]);
+
+      partition(root);
+
+      const arc = d3.arc()
+        .startAngle(d => d.x0)
+        .endAngle(d => d.x1)
+        .innerRadius(d => d.y0)
+        .outerRadius(d => d.y1);
+
+      const path = sunburstSvg.selectAll("path")
+        .data(root.descendants());
+
+      path.exit().remove();
+
+      path.enter().append("path")
+        .merge(path)
+        .attr("d", arc)
+        .attr("fill", d => color(d.data.name));
+    }
+
+    updateSunburst(regionData[0]);
+  </script>
+</body>
+</html>
